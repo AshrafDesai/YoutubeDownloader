@@ -1,0 +1,12 @@
+body {
+    background-color: #f4f4f4;
+}
+
+.container {
+    margin-top: 50px;
+}
+
+.progress-container {
+    display: none;
+    margin-top: 20px;
+}
