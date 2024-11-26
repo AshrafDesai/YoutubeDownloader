@@ -4,10 +4,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <meta name="description" content="Login to Video Downloader - Download your favorite videos">
+    <meta name="keywords" content="login, video downloader, account access">
+    <meta name="author" content="Your Name">
+    <meta name="theme-color" content="#2c3e50">
+    
+    <title>Login - Video Downloader Pro</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
-        /* Styles similar to index.html */
+        :root {
+            --primary-color: #4CAF50;
+            --primary-hover: #45a049;
+            --error-color: #dc3545;
+            --success-color: #28a745;
+            --text-dark: #2c3e50;
+            --text-light: #555;
+            --border-color: #ddd;
+            --white: #ffffff;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -15,91 +43,236 @@
         }
 
         body {
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
             background: linear-gradient(135deg, #6b7b8c, #2c3e50);
-            color: #fff;
-            height: 100vh;
+            color: var(--text-dark);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 20px;
         }
 
         .container {
-            background-color: #ffffff;
-            color: #333;
+            background-color: var(--white);
             padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px var(--shadow);
             width: 100%;
-            max-width: 700px;
-            text-align: center;
+            max-width: 450px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-color), #2196F3);
+        }
+
+        .logo {
+            margin-bottom: 30px;
+            color: var(--primary-color);
+            font-size: 2rem;
         }
 
         h2 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            color: #2c3e50;
+            font-size: 2rem;
+            margin-bottom: 30px;
+            color: var(--text-dark);
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 3px;
+            background: var(--primary-color);
+            border-radius: 2px;
         }
 
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            position: relative;
         }
 
-        label {
-            font-size: 1rem;
-            color: #555;
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-light);
+            font-weight: 500;
+            text-align: left;
         }
 
-        input {
+        .input-group .input-wrapper {
+            position: relative;
+        }
+
+        .input-group input {
             width: 100%;
-            padding: 12px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
+            padding: 15px;
+            padding-left: 45px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
             font-size: 1rem;
+            transition: var(--transition);
+            background-color: #f8f9fa;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+
+        .input-group .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--text-light);
         }
 
         .btn {
-            background-color: #4CAF50;
-            color: #fff;
+            background-color: var(--primary-color);
+            color: var(--white);
             padding: 15px 30px;
             width: 100%;
-            font-size: 1.2rem;
-            border-radius: 6px;
+            font-size: 1.1rem;
+            border-radius: 8px;
             border: none;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: var(--transition);
+            font-weight: 500;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
         }
 
         .btn:hover {
-            background-color: #45a049;
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn i {
+            margin-right: 8px;
         }
 
         .footer {
             margin-top: 30px;
-            font-size: 1rem;
-            color: #888;
+            color: var(--text-light);
+            font-size: 0.9rem;
         }
 
         .footer a {
-            color: #4CAF50;
+            color: var(--primary-color);
             text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
         }
 
         .footer a:hover {
+            color: var(--primary-hover);
             text-decoration: underline;
         }
 
-        /* Responsive design */
-        @media (max-width: 1024px) {
-            .container {
-                max-width: 90%;
-            }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .alert-error {
+            background-color: #fff5f5;
+            color: var(--error-color);
+            border: 1px solid #fcc;
+        }
+
+        .alert-success {
+            background-color: #f0fff4;
+            color: var(--success-color);
+            border: 1px solid #c3e6cb;
+        }
+
+        .loading {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         @media (max-width: 768px) {
             .container {
-                max-width: 90%;
-                padding: 30px;
+                padding: 30px 20px;
+            }
+
+            h2 {
+                font-size: 1.8rem;
+            }
+
+            .input-group input {
+                padding: 12px;
+                padding-left: 40px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                margin: 15px;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            .btn {
+                padding: 12px 20px;
+                font-size: 1rem;
             }
         }
     </style>
@@ -107,22 +280,155 @@
 
 <body>
     <div class="container">
-        <h2>Login</h2>
-        <form method="POST">
+        <!-- Loading Overlay -->
+        <div class="loading">
+            <div class="spinner"></div>
+        </div>
+
+        <div class="logo">
+            <i class="fas fa-cloud-download-alt"></i>
+        </div>
+        
+        <h2>Welcome Back</h2>
+
+        <!-- Alert Messages -->
+        <div class="alert alert-error" id="error-alert"></div>
+        <div class="alert alert-success" id="success-alert"></div>
+
+        <form method="POST" id="login-form" novalidate>
             <div class="input-group">
                 <label for="username">Username</label>
-                <input type="text" name="username" id="username" required>
+                <div class="input-wrapper">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="username" id="username" required 
+                           autocomplete="username" spellcheck="false"
+                           minlength="3" maxlength="50">
+                </div>
             </div>
+
             <div class="input-group">
                 <label for="password">Password</label>
-                <input type="password" name="password" id="password" required>
+                <div class="input-wrapper">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="password" id="password" required
+                           autocomplete="current-password" minlength="6">
+                    <i class="fas fa-eye password-toggle" id="password-toggle"></i>
+                </div>
             </div>
-            <button type="submit" class="btn">Login</button>
+
+            <button type="submit" class="btn" id="login-btn">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
         </form>
+
         <div class="footer">
-            <p>Don't have an account? <a href="{{ url_for('register') }}">Register</a></p>
+            <p>Don't have an account? <a href="{{ url_for('register') }}">Register Now</a></p>
+            <p style="margin-top: 10px;">
+                <a href="#" id="forgot-password">Forgot Password?</a>
+            </p>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('login-form');
+            const passwordToggle = document.getElementById('password-toggle');
+            const passwordInput = document.getElementById('password');
+            const errorAlert = document.getElementById('error-alert');
+            const successAlert = document.getElementById('success-alert');
+            const loading = document.querySelector('.loading');
+
+            // Password visibility toggle
+            passwordToggle.addEventListener('click', function() {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                this.classList.toggle('fa-eye');
+                this.classList.toggle('fa-eye-slash');
+            });
+
+            // Form submission
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // Basic validation
+                const username = document.getElementById('username').value.trim();
+                const password = passwordInput.value;
+
+                if (username.length < 3) {
+                    showError('Username must be at least 3 characters long');
+                    return;
+                }
+
+                if (password.length < 6) {
+                    showError('Password must be at least 6 characters long');
+                    return;
+                }
+
+                // Show loading
+                loading.style.display = 'flex';
+
+                try {
+                    const response = await fetch('{{ url_for("login") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: new URLSearchParams({
+                            username: username,
+                            password: password
+                        })
+                    });
+
+                    const data = await response.text();
+
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else if (!response.ok) {
+                        showError('Invalid username or password');
+                    }
+                } catch (error) {
+                    showError('An error occurred. Please try again.');
+                } finally {
+                    loading.style.display = 'none';
+                }
+            });
+
+            function showError(message) {
+                errorAlert.textContent = message;
+                errorAlert.style.display = 'block';
+                successAlert.style.display = 'none';
+                setTimeout(() => {
+                    errorAlert.style.display = 'none';
+                }, 5000);
+            }
+
+            function showSuccess(message) {
+                successAlert.textContent = message;
+                successAlert.style.display = 'block';
+                errorAlert.style.display = 'none';
+                setTimeout(() => {
+                    successAlert.style.display = 'none';
+                }, 5000);
+            }
+
+            // Prevent multiple form submissions
+            let isSubmitting = false;
+            form.addEventListener('submit', function() {
+                if (isSubmitting) {
+                    return false;
+                }
+                isSubmitting = true;
+                setTimeout(() => {
+                    isSubmitting = false;
+                }, 2000);
+            });
+
+            // Clear form data on page load
+            window.addEventListener('pageshow', function() {
+                form.reset();
+            });
+        });
+    </script>
 </body>
 
 </html>
