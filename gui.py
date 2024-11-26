@@ -1,168 +1,104 @@
-import subprocess
-import os
-import urllib.request
-import sys
-import tkinter as tk
-from tkinter import messagebox, filedialog
-from tkinter import ttk
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.uix.filechooser import FileChooserIconView
+from kivy.uix.progressbar import ProgressBar
+from kivy.uix.popup import Popup
+from kivy.uix.spinner import Spinner
+from kivy.graphics import Color, Rectangle
 
+class YouTubeDownloaderApp(App):
+    def build(self):
+        layout = BoxLayout(orientation='vertical', padding=20, spacing=10)
 
-# Check if the internet is connected
-def internet_on():
-    try:
-        urllib.request.urlopen('http://google.com', timeout=1)
-        return True
-    except urllib.request.URLError:
-        return False
+        # Heading
+        self.label = Label(text="YouTube Downloader", font_size=28, bold=True, color=(0.3, 0.3, 0.3, 1))
+        layout.add_widget(self.label)
 
+        # URL input
+        self.url_input = TextInput(hint_text="Enter YouTube URL", size_hint=(1, 0.1), height=40, font_size=16)
+        self.url_input.background_normal = ''
+        self.url_input.background_color = (0.95, 0.95, 0.95, 1)
+        self.url_input.foreground_color = (0.3, 0.3, 0.3, 1)
+        layout.add_widget(self.url_input)
 
-# Verify the YouTube URL
-def verify(url):
-    if internet_on():
-        try:
-            separation = url.split('/')
-            if separation[2] == 'www.youtube.com' or separation[2] == 'youtu.be':
-                return True
-            else:
-                messagebox.showerror("Invalid URL", "Not a valid YouTube URL")
-                return False
-        except Exception:
-            messagebox.showerror("Invalid URL", "Oops, Not a valid URL")
-            return False
+        # Download path input
+        self.path_input = TextInput(hint_text="Enter Download Path", size_hint=(1, 0.1), height=40, font_size=16)
+        self.path_input.background_normal = ''
+        self.path_input.background_color = (0.95, 0.95, 0.95, 1)
+        self.path_input.foreground_color = (0.3, 0.3, 0.3, 1)
+        layout.add_widget(self.path_input)
 
+        # Browse button
+        self.browse_button = Button(text="Browse", size_hint=(1, 0.1), background_color=(0.6, 0.8, 0.4, 1), font_size=16)
+        self.browse_button.bind(on_press=self.browse_path)
+        layout.add_widget(self.browse_button)
 
-# Quality Input Formatter
-def quality_input(quality_choice):
-    quality = ['240', '360', '480', '720']
-    if quality_choice == 5:
-        return ""
-    else:
-        return '-f "bestvideo[height<={q}]+bestaudio/best[height<={q}]"'.format(q=quality[quality_choice - 1])
+        # Quality spinner
+        self.quality_label = Label(text="Select Video Quality", size_hint=(1, 0.1), font_size=16, color=(0.3, 0.3, 0.3, 1))
+        layout.add_widget(self.quality_label)
+        self.quality_spinner = Spinner(
+            text='Best',
+            values=('Best', '720p', '480p', '360p', '240p'),
+            size_hint=(1, 0.1),
+            background_normal='',
+            background_color=(0.9, 0.9, 0.9, 1),
+            color=(0.3, 0.3, 0.3, 1)
+        )
+        layout.add_widget(self.quality_spinner)
 
+        # Download button
+        self.download_button = Button(text="Download Video", size_hint=(1, 0.1), background_color=(0.4, 0.7, 0.4, 1), font_size=16)
+        self.download_button.bind(on_press=self.download_video)
+        layout.add_widget(self.download_button)
 
-# Start Download Process
-def start_download(download_type, url, quality_choice, download_path):
-    try:
-        if not url:
-            messagebox.showerror("Input Error", "Please provide a valid YouTube URL")
-            return
+        # Progress bar (color customization via canvas)
+        self.progress_bar = ProgressBar(max=100, value=0, size_hint=(1, 0.1))
+        self.progress_bar.canvas.before.clear()  # Clear the canvas to reset custom drawing
+        with self.progress_bar.canvas.before:
+            Color(0.3, 0.6, 0.3, 1)  # Set the color to green
+            self.rect = Rectangle(size=self.progress_bar.size, pos=self.progress_bar.pos)
 
-        ffmpeg_path = "C:/Ashraf/Youtube/ffmpeg-2024-11-18-git-970d57988d-full_build/bin"
-        ffmpeg_location = f'--ffmpeg-location "{ffmpeg_path}"'
+        self.progress_bar.bind(size=self.update_rect, pos=self.update_rect)
+        layout.add_widget(self.progress_bar)
 
-        quality = quality_input(quality_choice)
+        return layout
 
-        if download_type == 1:  # Video download
-            command = f'yt-dlp {ffmpeg_location} -o "{download_path}/%(title)s.%(ext)s" -q --no-playlist --no-warnings {quality} --merge-output-format mp4 "{url}"'
-        elif download_type == 2:  # Playlist of Video files
-            command = f'yt-dlp {ffmpeg_location} -i -o "{download_path}/%(playlist)s/%(playlist_index)s.%(title)s.%(ext)s" --yes-playlist --newline --no-warnings {quality} --merge-output-format mp4 "{url}"'
-        elif download_type == 3:  # Audio download
-            command = f'yt-dlp {ffmpeg_location} -i -o "{download_path}/%(title)s.%(ext)s" --extract-audio --audio-format mp3 --no-warnings "{url}"'
-        elif download_type == 4:  # Playlist of Audio files
-            command = f'yt-dlp {ffmpeg_location} -i -o "{download_path}/%(title)s.%(ext)s" --yes-playlist --extract-audio --audio-format mp3 --no-warnings "{url}"'
+    def browse_path(self, instance):
+        filechooser = FileChooserIconView()
+        filechooser.bind(on_submit=self.select_path)
+        filechooser.size_hint = (1, 1)
+        popup = Popup(title="Select Folder", content=filechooser, size_hint=(0.9, 0.9))
+        popup.open()
 
-        # Running the download command
-        subprocess.call(command, shell=True)
+    def select_path(self, instance, value):
+        if value:
+            self.path_input.text = value[0]
 
-        messagebox.showinfo("Download Complete", f"Download complete! Files saved in: {download_path}")
-    except Exception as e:
-        messagebox.showerror("Error", f"An error occurred: {str(e)}")
+    def download_video(self, instance):
+        url = self.url_input.text
+        path = self.path_input.text
+        quality = self.quality_spinner.text
 
+        # Simulate downloading with a progress bar
+        self.progress_bar.value = 0
+        self.update_progress_bar()
 
-# Browse for folder to save files
-def browse_folder():
-    folder_selected = filedialog.askdirectory()
-    if folder_selected:
-        download_path_entry.delete(0, tk.END)
-        download_path_entry.insert(0, folder_selected)
+        # In a real app, this would be where you download the video
+        print(f"Downloading video from {url} at {quality} to {path}")
 
+    def update_progress_bar(self):
+        if self.progress_bar.value < 100:
+            self.progress_bar.value += 10
+            # Update every 0.5 seconds to simulate progress
+            from kivy.clock import Clock
+            Clock.schedule_once(lambda dt: self.update_progress_bar(), 0.5)
 
-# Handle Start Button click
-def on_start_button_click():
-    url = url_entry.get()
-    download_path = download_path_entry.get()
+    def update_rect(self, instance, value):
+        self.rect.size = instance.size
+        self.rect.pos = instance.pos
 
-    if not url:
-        messagebox.showwarning("Input Error", "Please enter a valid YouTube URL")
-        return
-
-    if not download_path:
-        messagebox.showwarning("Input Error", "Please select a download folder")
-        return
-
-    if verify(url):
-        download_type = download_type_var.get()
-        quality_choice = quality_var.get()
-        start_download(download_type, url, quality_choice, download_path)
-
-
-# Setting up the GUI window
-window = tk.Tk()
-window.title("YouTube Downloader")
-window.geometry("600x500")
-window.resizable(False, False)
-
-# Add some padding
-pad_x = 20
-pad_y = 10
-
-# URL entry
-url_label = tk.Label(window, text="Enter YouTube URL:", font=("Arial", 12))
-url_label.pack(pady=pad_y)
-url_entry = tk.Entry(window, width=50, font=("Arial", 12))
-url_entry.pack(pady=pad_y)
-
-# Download Type selection
-download_type_var = tk.IntVar()
-
-download_type_label = tk.Label(window, text="Select Download Type:", font=("Arial", 12))
-download_type_label.pack(pady=pad_y)
-
-download_type_radio1 = tk.Radiobutton(window, text="Video", variable=download_type_var, value=1, font=("Arial", 12))
-download_type_radio1.pack(pady=pad_y)
-
-download_type_radio2 = tk.Radiobutton(window, text="Playlist of Video Files", variable=download_type_var, value=2, font=("Arial", 12))
-download_type_radio2.pack(pady=pad_y)
-
-download_type_radio3 = tk.Radiobutton(window, text="Audio", variable=download_type_var, value=3, font=("Arial", 12))
-download_type_radio3.pack(pady=pad_y)
-
-download_type_radio4 = tk.Radiobutton(window, text="Playlist of Audio Files", variable=download_type_var, value=4, font=("Arial", 12))
-download_type_radio4.pack(pady=pad_y)
-
-# Quality selection
-quality_label = tk.Label(window, text="Select Video Quality:", font=("Arial", 12))
-quality_label.pack(pady=pad_y)
-
-quality_var = tk.IntVar(value=5)
-quality_radio1 = tk.Radiobutton(window, text="240p", variable=quality_var, value=1, font=("Arial", 12))
-quality_radio1.pack(pady=pad_y)
-
-quality_radio2 = tk.Radiobutton(window, text="360p", variable=quality_var, value=2, font=("Arial", 12))
-quality_radio2.pack(pady=pad_y)
-
-quality_radio3 = tk.Radiobutton(window, text="480p", variable=quality_var, value=3, font=("Arial", 12))
-quality_radio3.pack(pady=pad_y)
-
-quality_radio4 = tk.Radiobutton(window, text="720p", variable=quality_var, value=4, font=("Arial", 12))
-quality_radio4.pack(pady=pad_y)
-
-quality_radio5 = tk.Radiobutton(window, text="Best Available", variable=quality_var, value=5, font=("Arial", 12))
-quality_radio5.pack(pady=pad_y)
-
-# Download path
-download_path_label = tk.Label(window, text="Select Download Path:", font=("Arial", 12))
-download_path_label.pack(pady=pad_y)
-
-download_path_entry = tk.Entry(window, width=50, font=("Arial", 12))
-download_path_entry.pack(pady=pad_y)
-
-browse_button = tk.Button(window, text="Browse", command=browse_folder, font=("Arial", 12))
-browse_button.pack(pady=pad_y)
-
-# Start Download Button
-start_button = tk.Button(window, text="Start Download", command=on_start_button_click, font=("Arial", 14), bg="#4CAF50", fg="white")
-start_button.pack(pady=20)
-
-# Run the GUI
-window.mainloop()
+if __name__ == "__main__":
+    YouTubeDownloaderApp().run()
