@@ -48,7 +48,10 @@ def progress_hook(d):
     global download_progress
     
     if d['status'] == 'downloading':
-        # Calculate actual progress
+        # Get the current filename being downloaded
+        filename = d.get('info_dict', {}).get('title', 'Unknown')
+        
+        # Calculate progress
         total = d.get('total_bytes') or d.get('total_bytes_estimate', 0)
         downloaded = d.get('downloaded_bytes', 0)
         
@@ -57,13 +60,17 @@ def progress_hook(d):
         else:
             percent = 0
 
+        # Calculate speed and ETA
+        speed = d.get('speed', 0)
+        eta = d.get('eta', 0)
+
         # Update progress information
         download_progress.update({
-            'status': 'downloading',
-            'filename': os.path.basename(d.get('filename', '')),
+            'status': f'Downloading: {filename}',
+            'title': filename,
             'percent': round(percent, 1),
-            'speed': d.get('speed', 0),
-            'eta': d.get('eta', 0),
+            'speed': speed,
+            'eta': eta,
             'downloaded_bytes': downloaded,
             'total_bytes': total,
             'start_time': download_progress['start_time'] or datetime.now()
@@ -71,12 +78,11 @@ def progress_hook(d):
     
     elif d['status'] == 'finished':
         download_progress.update({
-            'status': 'finished',
+            'status': 'Processing completed file...',
             'percent': 100,
             'speed': 0,
             'eta': 0
         })
-
 def send_otp(email):
     """Send OTP to user's email for verification."""
     otp = str(random.randint(100000, 999999))
@@ -195,57 +201,64 @@ def downloader():
         return redirect(url_for('login'))
     return render_template('download.html', username=session['username'])
 
+
 @app.route('/download', methods=['POST'])
 def download():
-    if 'username' not in session:
-        return jsonify({'error': 'Not logged in'}), 401
-    
     try:
         url = request.form.get('url')
         choice = int(request.form.get('choice'))
-        download_path = request.form.get('path', DOWNLOAD_PATH)
-        
+        quality = request.form.get('quality', 'best')
+        download_path = request.form.get('path', 'downloads')
+
         # Reset progress
         global download_progress
         download_progress = {
-            'status': 'Not started',
+            'status': 'Starting download...',
             'percent': 0,
             'speed': 0,
             'eta': 0,
-            'filename': '',
+            'title': '',
             'downloaded_bytes': 0,
             'total_bytes': 0,
             'start_time': datetime.now()
         }
-        
-        # Create download directory
+
         if not os.path.exists(download_path):
             os.makedirs(download_path)
-        
-        # Configure yt-dlp options
+
+        # Configure format based on quality selection
+        if quality == 'best':
+            format_str = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
+        else:
+            format_str = f'bestvideo[height<={quality}][ext=mp4]+bestaudio[ext=m4a]/best[height<={quality}][ext=mp4]/best'
+
         ydl_opts = {
-            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' if choice in [1, 2] else None,
+            'format': format_str if choice in [1, 2] else 'bestaudio/best',
             'extract_audio': choice in [3, 4],
             'audio_format': 'mp3' if choice in [3, 4] else None,
             'progress_hooks': [progress_hook],
             'outtmpl': os.path.join(download_path, '%(title)s.%(ext)s'),
             'ffmpeg_location': FFMPEG_PATH,
-            'verbose': True
+            'verbose': True,
+            'postprocessor_hooks': [progress_hook],
+            'writethumbnail': True,
+            'keepvideo': True,
         }
-        
-        if choice in [2, 4]:  # Playlist options
-            ydl_opts['yes_playlist'] = True
-            ydl_opts['outtmpl'] = os.path.join(download_path, '%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s')
+
+        if choice in [2, 4]:
+            ydl_opts.update({
+                'yes_playlist': True,
+                'outtmpl': os.path.join(download_path, '%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s')
+            })
         else:
             ydl_opts['noplaylist'] = True
-        
-        # Start download in background
+
         thread = Thread(target=start_download, args=(url, ydl_opts))
         thread.daemon = True
         thread.start()
-        
+
         return jsonify({'status': 'Download started'})
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -253,14 +266,13 @@ def download():
 def download_progress_route():
     def generate():
         while True:
+            # Format the data for the frontend
             data = {
                 'status': download_progress['status'],
                 'percent': download_progress['percent'],
                 'speed': format_speed(download_progress['speed']),
                 'eta': format_eta(download_progress['eta']),
-                'filename': download_progress['filename'],
-                'downloaded': download_progress['downloaded_bytes'],
-                'total': download_progress['total_bytes']
+                'title': download_progress['title'],
             }
             
             yield f"data: {json.dumps(data)}\n\n"
@@ -271,6 +283,47 @@ def download_progress_route():
             time.sleep(0.5)
     
     return Response(generate(), mimetype='text/event-stream')
+
+
+@app.route('/get_playlist_info', methods=['POST'])
+def get_playlist_info():
+    try:
+        url = request.form.get('url')
+        if not url:
+            return jsonify({'error': 'URL is required'}), 400
+        
+        ydl_opts = {
+            'quiet': True,
+            'no_warnings': True,
+            'extract_flat': True,
+        }
+        
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            playlist_info = ydl.extract_info(url, download=False)
+            
+            if playlist_info.get('_type') != 'playlist':
+                return jsonify({'error': 'Not a playlist URL'}), 400
+            
+            videos = []
+            for entry in playlist_info.get('entries', []):
+                videos.append({
+                    'title': entry.get('title', 'Unknown Title'),
+                    'duration': str(int(entry.get('duration', 0) // 60)) + ':' + 
+                               str(int(entry.get('duration', 0) % 60)).zfill(2),
+                    'thumbnail': entry.get('thumbnail', ''),
+                    'url': entry.get('url', ''),
+                    'video_id': entry.get('id', ''),
+                    'status': 'pending'
+                })
+            
+            return jsonify({
+                'playlist_title': playlist_info.get('title', 'Unknown Playlist'),
+                'video_count': len(videos),
+                'videos': videos
+            })
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/get-video-info', methods=['POST'])
 def get_video_info_route():
