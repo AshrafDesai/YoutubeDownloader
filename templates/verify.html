@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Email - YouTube Downloader Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #ff0000;
+            --secondary-color: #0066ff;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --gradient-start: #1e3c72;
+            --gradient-end: #2a5298;
+            --card-bg: rgba(255, 255, 255, 0.95);
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            animation: gradientAnimation 15s ease infinite;
+            background-size: 400% 400%;
+        }
+
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 500px;
+            perspective: 1000px;
+        }
+
+        .auth-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            transform-style: preserve-3d;
+            animation: cardEntry 0.5s ease-out;
+        }
+
+        @keyframes cardEntry {
+            from {
+                opacity: 0;
+                transform: translateY(20px) rotateX(-10deg);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) rotateX(0);
+            }
+        }
+
+        .auth-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .auth-title {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 700;
+            font-size: 2.2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .auth-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            border-radius: 2px;
+        }
+
+        .verification-text {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #4a5568;
+            line-height: 1.6;
+            font-size: 1.1rem;
+            animation: fadeIn 0.5s ease-out 0.3s both;
+        }
+
+        .verification-text strong {
+            color: var(--secondary-color);
+            display: block;
+            margin-top: 8px;
+            font-size: 1.2rem;
+            word-break: break-all;
+        }
+
+        .otp-container {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 30px;
+            animation: fadeIn 0.5s ease-out 0.6s both;
+        }
+
+        .otp-input {
+            width: 55px;
+            height: 55px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            caret-color: var(--secondary-color);
+        }
+
+        .otp-input:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0,102,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .otp-input.filled {
+            background: rgba(0,102,255,0.05);
+            border-color: var(--secondary-color);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            background: linear-gradient(45deg, var(--secondary-color), #0052cc);
+            border: none;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255,255,255,0.2),
+                transparent
+            );
+            transition: 0.5s;
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0,102,255,0.2);
+        }
+
+        .submit-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+
+        .resend-link {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            animation: fadeIn 0.5s ease-out 0.9s both;
+        }
+
+        .resend-link span {
+            color: #4a5568;
+            font-size: 1.05rem;
+        }
+
+        .resend-link a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 8px;
+            padding: 5px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .resend-link a:hover:not(.disabled) {
+            background: rgba(0,102,255,0.1);
+            transform: translateY(-1px);
+        }
+
+        .resend-link a.disabled {
+            color: #a0aec0;
+            cursor: not-allowed;
+        }
+
+        .timer {
+            color: #718096;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        .message {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            text-align: center;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        .error-message {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: var(--error-color);
+            border: 1px solid rgba(220, 53, 69, 0.2);
+        }
+
+        .success-message {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(40, 167, 69, 0.2);
+        }
+
+        .loading-spinner {
+            display: none;
+            margin-left: 10px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 576px) {
+            .auth-card {
+                padding: 25px;
+            }
+
+            .otp-container {
+                gap: 8px;
+            }
+
+            .otp-input {
+                width: 45px;
+                height: 45px;
+                font-size: 1.2rem;
+            }
+
+            .auth-title {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <h2 class="auth-title">Verify Your Email</h2>
+            
+            <div class="error-message message" id="errorMessage">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="errorText"></span>
+            </div>
+            
+            <div class="success-message message" id="successMessage">
+                <i class="fas fa-check-circle"></i>
+                <span id="successText"></span>
+            </div>
+
+            <p class="verification-text">
+                We've sent a verification code to<br>
+                <strong id="userEmail"></strong>
+            </p>
+
+            <form id="verifyForm">
+                <div class="otp-container">
+                    <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" required>
+                    <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" required>
+                    <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" required>
+                    <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" required>
+                    <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" required>
+                    <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" required>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    Verify Email
+                    <span class="loading-spinner" id="loadingSpinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </span>
+                </button>
+            </form>
+
+            <div class="resend-link">
+                <span>Didn't receive the code?</span>
+                <br>
+                <a href="#" id="resendLink">Resend Code</a>
+                <div class="timer" id="timer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('verifyForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const resendLink = document.getElementById('resendLink');
+            const timerElement = document.getElementById('timer');
+            let resendTimer = 60;
+            let timerInterval;
+
+            // Get email from URL parameters and decode it
+            const urlParams = new URLSearchParams(window.location.search);
+            const email = decodeURIComponent(urlParams.get('email') || '');
+            document.getElementById('userEmail').textContent = email;
+
+            // Setup OTP inputs with enhanced functionality
+            const inputs = document.querySelectorAll('.otp-input');
+            
+            inputs.forEach((input, index) => {
+                // Focus first input on page load
+                if (index === 0) input.focus();
+
+                input.addEventListener('keyup', function(e) {
+                    const key = e.key;
+                    
+                    if (key === "Backspace" || key === "Delete") {
+                        if (!this.value && index > 0) {
+                            inputs[index - 1].focus();
+                            inputs[index - 1].value = '';
+                        }
+                        updateInputStates();
+                        return;
+                    }
+
+                    if (this.value) {
+                        this.classList.add('filled');
+                        if (index < inputs.length - 1) {
+                            inputs[index + 1].focus();
+                        }
+                    } else {
+                        this.classList.remove('filled');
+                    }
+
+                    updateInputStates();
+                });
+
+                input.addEventListener('keypress', function(e) {
+                    if (!/[0-9]/.test(e.key)) {
+                        e.preventDefault();
+                        return;
+                    }
+                });
+
+                input.addEventListener('focus', function() {
+                    this.select();
+                });
+
+                // Handle paste event
+                input.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const paste = e.clipboardData.getData('text');
+                    const numbers = paste.match(/[0-9]/g);
+                    
+                    if (numbers) {
+                        numbers.forEach((num, i) => {
+                            if (i < inputs.length) {
+                                inputs[i].value = num;
+                                inputs[i].classList.add('filled');
+                                if (i < inputs.length - 1) {
+                                    inputs[i + 1].focus();
+                                }
+                            }
+                        });
+                        updateInputStates();
+                    }
+                });
+            });
+
+            function updateInputStates() {
+                const allFilled = Array.from(inputs).every(input => input.value.length === 1);
+                submitBtn.disabled = !allFilled;
+            }
+
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const otp = Array.from(inputs).map(input => input.value).join('');
+                if (otp.length !== 6) {
+                    showError('Please enter all digits of the verification code.');
+                    return;
+                }
+
+                try {
+                    showLoading();
+                    hideMessages();
+
+                    const response = await fetch('/verify-otp', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            email: email,
+                            otp: otp
+                        })
+                    });
+
+                    const data = await response.json();
+                    hideLoading();
+
+                    if (response.ok) {
+                        showSuccess('Email verified successfully!');
+                        inputs.forEach(input => input.disabled = true);
+                        setTimeout(() => {
+                            window.location.href = data.redirect || '/login';
+                        }, 2000);
+                    } else {
+                        showError(data.error || 'Verification failed. Please try again.');
+                        inputs.forEach(input => {
+                            input.value = '';
+                            input.classList.remove('filled');
+                        });
+                        inputs[0].focus();
+                    }
+
+                } catch (error) {
+                    hideLoading();
+                    showError('An error occurred. Please try again.');
+                    console.error('Error:', error);
+                }
+            });
+
+            resendLink.addEventListener('click', async function(e) {
+                e.preventDefault();
+                
+                if (this.classList.contains('disabled')) {
+                    return;
+                }
+
+                try {
+                    showLoading();
+                    hideMessages();
+
+                    const response = await fetch('/resend-otp', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email: email })
+                    });
+
+                    const data = await response.json();
+                    hideLoading();
+
+                    if (response.ok) {
+                        showSuccess('New verification code sent!');
+                        startResendTimer();
+                        inputs.forEach(input => {
+                            input.value = '';
+                            input.classList.remove('filled');
+                        });
+                        inputs[0].focus();
+                    } else {
+                        showError(data.error || 'Failed to resend code. Please try again.');
+                    }
+
+                } catch (error) {
+                    hideLoading();
+                    showError('An error occurred. Please try again.');
+                    console.error('Error:', error);
+                }
+            });
+
+            function startResendTimer() {
+                resendLink.classList.add('disabled');
+                resendTimer = 60;
+                updateTimer();
+                
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                }
+                
+                timerInterval = setInterval(() => {
+                    resendTimer--;
+                    updateTimer();
+                    
+                    if (resendTimer <= 0) {
+                        clearInterval(timerInterval);
+                        timerElement.style.display = 'none';
+                        resendLink.classList.remove('disabled');
+                    }
+                }, 1000);
+            }
+
+            function updateTimer() {
+                timerElement.style.display = 'block';
+                timerElement.textContent = `Resend available in ${resendTimer}s`;
+            }
+
+            function showLoading() {
+                submitBtn.disabled = true;
+                loadingSpinner.style.display = 'inline-block';
+            }
+
+            function hideLoading() {
+                updateInputStates();
+                loadingSpinner.style.display = 'none';
+            }
+
+            function showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                document.getElementById('errorText').textContent = message;
+                errorDiv.style.display = 'block';
+            }
+
+            function showSuccess(message) {
+                const successDiv = document.getElementById('successMessage');
+                document.getElementById('successText').textContent = message;
+                successDiv.style.display = 'block';
+            }
+
+            function hideMessages() {
+                document.getElementById('errorMessage').style.display = 'none';
+                document.getElementById('successMessage').style.display = 'none';
+            }
+
+            // Start timer on page load
+            startResendTimer();
+        });
+    </script>
+</body>
+</html>

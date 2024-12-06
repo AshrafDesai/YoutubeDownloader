@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Downloader</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f2f5;
+            padding-top: 20px;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .progress {
+            height: 25px;
+            border-radius: 12px;
+        }
+        .progress-bar {
+            transition: width 0.3s ease-in-out;
+        }
+        .download-info {
+            font-size: 14px;
+            color: #666;
+        }
+        .thumbnail-container {
+            max-width: 300px;
+            margin: 0 auto;
+            display: none;
+        }
+        .thumbnail-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+        #videoInfo {
+            display: none;
+        }
+        #progressSection {
+            display: none;
+        }
+        #completionDialog {
+            display: none;
+        }
+        #errorMessage {
+            display: none;
+        }
+        .loading-spinner {
+            display: none;
+        }
+        .btn-custom {
+            margin: 5px;
+            min-width: 120px;
+        }
+        .format-select {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <h1 class="display-4">YouTube Downloader</h1>
+            <p class="lead">Download videos, playlists, or audio from YouTube</p>
+        </div>
+
+        <!-- Main Form -->
+        <div class="card">
+            <div class="card-body">
+                <form id="downloadForm" onsubmit="return false;">
+                    <!-- URL Input -->
+                    <div class="mb-3">
+                        <label for="url" class="form-label">YouTube URL</label>
+                        <input type="url" class="form-control" id="url" required 
+                               placeholder="https://www.youtube.com/watch?v=...">
+                    </div>
+
+                    <!-- Download Type Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Download Type</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="downloadType" id="videoType" value="video" checked>
+                            <label class="btn btn-outline-primary" for="videoType">Video</label>
+
+                            <input type="radio" class="btn-check" name="downloadType" id="audioType" value="audio">
+                            <label class="btn btn-outline-primary" for="audioType">Audio</label>
+
+                            <input type="radio" class="btn-check" name="downloadType" id="playlistType" value="playlist">
+                            <label class="btn btn-outline-primary" for="playlistType">Playlist</label>
+                        </div>
+                    </div>
+
+                    <!-- Format Selection (initially hidden) -->
+                    <div class="mb-3" id="formatSelection" style="display: none;">
+                        <label for="format" class="form-label">Select Format</label>
+                        <select class="form-select" id="format">
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </div>
+
+                    <!-- Custom Path Input -->
+                    <div class="mb-3">
+                        <label for="customPath" class="form-label">Download Path (Optional)</label>
+                        <input type="text" class="form-control" id="customPath" 
+                               placeholder="Leave empty for default location">
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg" onclick="handleSubmit()">
+                            Get Info
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="text-center loading-spinner" id="loadingSpinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Processing your request...</p>
+        </div>
+
+        <!-- Video/Playlist Information -->
+        <div class="card" id="videoInfo" style="display: none;">
+            <div class="card-body">
+                <div class="thumbnail-container mb-3">
+                    <img id="thumbnail" src="" alt="Video Thumbnail">
+                </div>
+                <h3 id="videoTitle" class="text-center mb-3"></h3>
+                <p id="videoDuration" class="text-center mb-2"></p>
+                <p id="playlistInfo" class="text-center mb-3"></p>
+                <div class="text-center">
+                    <button class="btn btn-success btn-lg" onclick="startDownload()">
+                        Start Download
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Section -->
+        <div class="card" id="progressSection">
+            <div class="card-body">
+                <h4 class="text-center mb-3">Download Progress</h4>
+                <div class="progress mb-3">
+                    <div id="progressBar" class="progress-bar" role="progressbar" 
+                         style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                </div>
+                <div class="download-info text-center">
+                    <p id="currentFileName"></p>
+                    <p>Size: <span id="fileSize"></span></p>
+                    <p>Speed: <span id="downloadSpeed"></span></p>
+                    <p>ETA: <span id="downloadETA"></span></p>
+                    <p>Status: <span id="downloadStatus"></span></p>
+                </div>
+                <div class="text-center">
+                    <button id="pauseBtn" class="btn btn-warning btn-custom" onclick="pauseDownload()">Pause</button>
+                    <button id="resumeBtn" class="btn btn-success btn-custom" onclick="resumeDownload()" style="display: none;">Resume</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completion Dialog -->
+        <div class="modal fade" id="completionModal" tabindex="-1" aria-labelledby="completionModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="completionModalLabel">Download Completed</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Your download has completed successfully!</p>
+                        <p>Would you like to download more?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="redirectToThankYou()">No, Thanks</button>
+                        <button type="button" class="btn btn-primary" onclick="resetForm()" data-bs-dismiss="modal">Yes, Download More</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div class="alert alert-danger" id="errorMessage">
+            <strong>Error:</strong> <span id="errorText"></span>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let eventSource = null;
+
+        function handleSubmit() {
+            const url = document.getElementById('url').value;
+            const downloadType = document.querySelector('input[name="downloadType"]:checked').value;
+            const customPath = document.getElementById('customPath').value;
+
+            if (!url) {
+                showError('Please enter a valid YouTube URL.');
+                return;
+            }
+
+            showLoading();
+
+            fetch('/get-info', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url, type: downloadType })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+
+                displayVideoInfo(data);
+                updateFormatOptions(data.available_formats);
+            })
+            .catch(error => {
+                hideLoading();
+                showError('Failed to get video information: ' + error.message);
+            });
+        }
+
+        function displayVideoInfo(data) {
+            const videoInfo = document.getElementById('videoInfo');
+            const thumbnailContainer = document.querySelector('.thumbnail-container');
+            const thumbnail = document.getElementById('thumbnail');
+            const videoTitle = document.getElementById('videoTitle');
+            const videoDuration = document.getElementById('videoDuration');
+            const playlistInfo = document.getElementById('playlistInfo');
+
+            videoTitle.textContent = data.title || 'Unknown Title';
+            videoDuration.textContent = data.is_playlist ? 
+                `Total Duration: ${Math.floor(data.duration / 60)} minutes` : 
+                `Duration: ${formatTime(data.duration)}`;
+            playlistInfo.textContent = data.is_playlist ? 
+                `Playlist: ${data.playlist_count} videos` : '';
+
+            if (data.thumbnail) {
+                thumbnailContainer.style.display = 'block';
+                thumbnail.src = data.thumbnail;
+                thumbnail.onerror = function() {
+                    thumbnailContainer.style.display = 'none';
+                };
+            } else {
+                thumbnailContainer.style.display = 'none';
+            }
+
+            videoInfo.style.display = 'block';
+        }
+
+        function updateFormatOptions(formats) {
+            const formatSelect = document.getElementById('format');
+            formatSelect.innerHTML = '';
+            formats.forEach(format => {
+                const option = document.createElement('option');
+                option.value = format.height || format.quality;
+                option.textContent = format.label;
+                formatSelect.appendChild(option);
+            });
+            document.getElementById('formatSelection').style.display = 'block';
+        }
+
+        function startDownload() {
+            if (eventSource) {
+                console.log('Download already in progress');
+                return;
+            }
+
+            const url = document.getElementById('url').value;
+            const downloadType = document.querySelector('input[name="downloadType"]:checked').value;
+            const format = document.getElementById('format').value;
+            const customPath = document.getElementById('customPath').value;
+
+            const downloadData = {
+                url,
+                type: downloadType,
+                format_data: downloadType === 'audio' ? { quality: format } : { height: format },
+                custom_path: customPath,
+                title: document.getElementById('videoTitle').textContent,
+                playlist_count: downloadType === 'playlist' ? 
+                    parseInt(document.getElementById('playlistInfo').textContent.match(/\d+/)[0]) : null
+            };
+
+            showLoading();
+
+            const startButton = document.querySelector('#videoInfo button');
+            startButton.disabled = true;
+
+            fetch('/initialize-download', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(downloadData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.error) {
+                    showError(data.error);
+                    startButton.disabled = false;
+                    return;
+                }
+
+                document.getElementById('progressSection').style.display = 'block';
+                document.getElementById('videoInfo').style.display = 'none';
+                startProgressUpdates(data.session_id);
+            })
+            .catch(error => {
+                hideLoading();
+                startButton.disabled = false;
+                showError('Failed to initialize download: ' + error.message);
+            });
+        }
+
+        function startProgressUpdates(sessionId) {
+            cleanup();
+
+            eventSource = new EventSource(`/download-progress/${sessionId}`);
+            
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    updateProgress(data);
+                    
+                    if (data.completed || data.status === 'completed') {
+                        cleanup();
+                        completeDownload();
+                    }
+                    
+                    if (data.error || data.status === 'error') {
+                        cleanup();
+                        showError(data.error || 'Download failed');
+                    }
+                } catch (error) {
+                    console.error('Error processing progress update:', error);
+                    cleanup();
+                }
+            };
+
+            eventSource.onerror = function(event) {
+                console.error('EventSource error:', event);
+                if (event.target.readyState === EventSource.CLOSED) {
+                    cleanup();
+                    return;
+                }
+                
+                const progressSection = document.getElementById('progressSection');
+                if (progressSection.style.display !== 'none') {
+                    setTimeout(() => {
+                        startProgressUpdates(sessionId);
+                    }, 3000);
+                }
+            };
+        }
+
+        function updateProgress(data) {
+            const progressBar = document.getElementById('progressBar');
+            const currentFileName = document.getElementById('currentFileName');
+            const fileSize = document.getElementById('fileSize');
+            const downloadSpeed = document.getElementById('downloadSpeed');
+            const downloadETA = document.getElementById('downloadETA');
+            const downloadStatus = document.getElementById('downloadStatus');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const resumeBtn = document.getElementById('resumeBtn');
+
+            if (data.filename) {
+                currentFileName.textContent = data.filename;
+            }
+
+            if (data.total_bytes) {
+                fileSize.textContent = formatBytes(data.total_bytes);
+            }
+
+            if (data.speed) {
+                downloadSpeed.textContent = data.speed;
+            }
+
+            if (data.eta) {
+                downloadETA.textContent = typeof data.eta === 'number' ? 
+                    formatTime(data.eta) : data.eta;
+            }
+
+            if (data.playlist_status) {
+                downloadStatus.textContent = data.playlist_status;
+            } else {
+                downloadStatus.textContent = data.status;
+            }
+
+            if (typeof data.progress === 'number') {
+                const progress = Math.round(data.progress);
+                progressBar.style.width = `${progress}%`;
+                progressBar.setAttribute('aria-valuenow', progress);
+                progressBar.textContent = `${progress}%`;
+            }
+
+            if (data.paused) {
+                pauseBtn.style.display = 'none';
+                resumeBtn.style.display = 'inline-block';
+            } else {
+                pauseBtn.style.display = 'inline-block';
+                resumeBtn.style.display = 'none';
+            }
+
+            if (data.status === 'completed' || data.completed) {
+                document.getElementById('progressSection').style.display = 'none';
+                $('#completionModal').modal('show');
+                
+                if (eventSource) {
+                    eventSource.close();
+                    eventSource = null;
+                }
+            }
+
+            if (data.status === 'error' || data.error) {
+                showError(data.error || 'An error occurred during download');
+                document.getElementById('progressSection').style.display = 'none';
+                
+                if (eventSource) {
+                    eventSource.close();
+                    eventSource = null;
+                }
+            }
+        }
+
+        function pauseDownload() {
+            const sessionId = eventSource.url.split('/').pop();
+            fetch(`/pause-download/${sessionId}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Download paused');
+                    } else {
+                        showError('Failed to pause download');
+                    }
+                })
+                .catch(error => showError('Error pausing download: ' + error.message));
+        }
+
+        function resumeDownload() {
+            const sessionId = eventSource.url.split('/').pop();
+            fetch(`/resume-download/${sessionId}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Download resumed');
+                    } else {
+                        showError('Failed to resume download');
+                    }
+                })
+                .catch(error => showError('Error resuming download: ' + error.message));
+        }
+
+        function completeDownload() {
+            cleanup();
+            $('#completionModal').modal('show');
+        }
+
+        function resetForm() {
+            document.getElementById('downloadForm').reset();
+            document.getElementById('videoInfo').style.display = 'none';
+            document.getElementById('progressSection').style.display = 'none';
+            document.getElementById('completionDialog').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('formatSelection').style.display = 'none';
+        }
+
+        function redirectToThankYou() {
+            window.location.href = '/thank-you';
+        }
+
+        function showLoading() {
+            document.getElementById('loadingSpinner').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSpinner').style.display = 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            document.getElementById('errorText').textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+        }
+
+        function formatTime(seconds) {
+            if (!seconds || seconds === 'Unknown') return 'Unknown';
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function cleanup() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+                
+                fetch('/cleanup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        session_id: eventSource.url.split('/').pop()
+                    })
+                }).catch(error => console.error('Cleanup error:', error));
+            }
+        }
+
+        window.addEventListener('beforeunload', function() {
+            cleanup();
+        });
+    </script>
+</body>
+</html>
