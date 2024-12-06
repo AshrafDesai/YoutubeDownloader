@@ -1,0 +1,6 @@
+Flask==2.2.2
+Flask-SQLAlchemy==2.5.1
+Flask-Mail==0.9.1
+Flask-Login==0.6.2
+yt-dlp==2023.09.12
+Werkzeug==2.2.2
