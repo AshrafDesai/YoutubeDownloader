@@ -19,8 +19,8 @@ app.config.update(
     MAIL_SERVER='smtp.gmail.com',
     MAIL_PORT=587,
     MAIL_USE_TLS=True,
-    MAIL_USERNAME='ashrafdesai6598@gmail.com',
-    MAIL_PASSWORD='wtuf hyek gvmp opcs',
+    MAIL_USERNAME='',
+    MAIL_PASSWORD='',
     TEMPLATES_AUTO_RELOAD=False
 )
 
